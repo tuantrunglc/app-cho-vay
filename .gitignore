@@ -110,3 +110,5 @@ temp/
 
 # Vite
 .vite/
+
+!public/_redirects
