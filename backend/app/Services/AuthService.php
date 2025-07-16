@@ -250,7 +250,7 @@ class AuthService
     {
         // Simple refresh token generation
         // In production, you should store this in database with expiration
-        return base64_encode($user->id . '|' . time() . '|' . str_random(32));
+        return base64_encode($user->id . '|' . time() . '|' . \Illuminate\Support\Str::random(32));
     }
 
     /**

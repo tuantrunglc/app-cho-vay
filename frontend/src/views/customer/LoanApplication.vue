@@ -445,6 +445,7 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useContentStore } from '@/stores/content'
 import { useLoanStore } from '@/stores/loan'
+import { apiHelpers } from '@/services'
 
 // Icons
 import CheckIcon from '@/components/icons/CheckIcon.vue'
@@ -566,10 +567,7 @@ const getOccupationText = (occupation) => {
 }
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount)
+  return apiHelpers.formatCurrency(amount)
 }
 
 const nextStep = () => {
@@ -608,10 +606,10 @@ const handleSubmit = async () => {
     })
     
     if (result.success) {
-      applicationId.value = result.applicationId
+      applicationId.value = result.application?.id || result.application?.application_id
       showSuccessModal.value = true
     } else {
-      alert('Có lỗi xảy ra khi gửi đơn vay. Vui lòng thử lại.')
+      alert(result.error || 'Có lỗi xảy ra khi gửi đơn vay. Vui lòng thử lại.')
     }
   } catch (error) {
     console.error('Error submitting loan application:', error)

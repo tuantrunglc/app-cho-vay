@@ -16,6 +16,7 @@ class AdminUserSeeder extends Seeder
         // Create super admin
         User::create([
             'name' => 'Super Admin',
+            'phone' => '0900000001',
             'username' => 'admin',
             'email' => 'admin@chovaynhanh.com',
             'password' => Hash::make('admin123'),
@@ -42,6 +43,7 @@ class AdminUserSeeder extends Seeder
         // Create loan officer
         User::create([
             'name' => 'Loan Officer',
+            'phone' => '0900000002',
             'username' => 'loan_officer',
             'email' => 'loan@chovaynhanh.com',
             'password' => Hash::make('loan123'),
@@ -61,6 +63,7 @@ class AdminUserSeeder extends Seeder
         // Create customer service
         User::create([
             'name' => 'Customer Service',
+            'phone' => '0900000003',
             'username' => 'cs_staff',
             'email' => 'cs@chovaynhanh.com',
             'password' => Hash::make('cs123'),

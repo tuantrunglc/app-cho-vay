@@ -1,81 +1,22 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { apiService, apiHelpers } from '@/services'
 
 export const useUserStore = defineStore('user', () => {
   // State
   const user = ref(null)
-  const walletBalance = ref(2500000) // 2.5 triệu
-  const linkedBanks = ref([
-    {
-      id: 1,
-      name: 'Vietcombank',
-      logo: '/images/banks/vcb.png',
-      accountNumber: '**** **** **** 1234',
-      isDefault: true
-    },
-    {
-      id: 2,
-      name: 'Techcombank',
-      logo: '/images/banks/tcb.png',
-      accountNumber: '**** **** **** 5678',
-      isDefault: false
-    },
-    {
-      id: 3,
-      name: 'BIDV',
-      logo: '/images/banks/bidv.png',
-      accountNumber: '**** **** **** 9012',
-      isDefault: false
-    }
-  ])
-  
-  const customers = ref([
-    {
-      id: 1,
-      name: 'Nguyễn Văn A',
-      phone: '0901234567',
-      email: 'nguyenvana@email.com',
-      idCard: '123456789012',
-      address: '123 Đường ABC, Quận 1, TP.HCM',
-      status: 'active',
-      joinDate: '2024-01-10',
-      totalLoans: 2,
-      currentDebt: 50000000
-    },
-    {
-      id: 2,
-      name: 'Trần Thị B',
-      phone: '0987654321',
-      email: 'tranthib@email.com',
-      idCard: '987654321098',
-      address: '456 Đường XYZ, Quận 2, TP.HCM',
-      status: 'active',
-      joinDate: '2024-01-12',
-      totalLoans: 1,
-      currentDebt: 30000000
-    },
-    {
-      id: 3,
-      name: 'Lê Văn C',
-      phone: '0912345678',
-      email: 'levanc@email.com',
-      idCard: '456789123456',
-      address: '789 Đường DEF, Quận 3, TP.HCM',
-      status: 'blocked',
-      joinDate: '2024-01-08',
-      totalLoans: 3,
-      currentDebt: 0
-    }
-  ])
+  const profile = ref(null)
+  const walletBalance = ref(0)
+  const linkedBanks = ref([])
+  const customers = ref([])
+  const isLoading = ref(false)
+  const error = ref(null)
   
   // Computed
   const isLoggedIn = computed(() => user.value !== null)
   
   const formattedBalance = computed(() => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(walletBalance.value)
+    return apiHelpers.formatCurrency(walletBalance.value)
   })
   
   const defaultBank = computed(() => {
@@ -91,12 +32,92 @@ export const useUserStore = defineStore('user', () => {
   })
   
   // Actions
+  const fetchUserProfile = async () => {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await apiService.getUserProfile()
+      
+      if (apiHelpers.isSuccessResponse(response)) {
+        profile.value = apiHelpers.getResponseData(response)
+        user.value = profile.value // Keep user in sync
+        
+        return { success: true, profile: profile.value }
+      } else {
+        throw new Error(response.message || 'Không thể lấy thông tin profile')
+      }
+    } catch (err) {
+      error.value = apiHelpers.handleApiError(err)
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const updateUserProfile = async (profileData) => {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await apiService.updateUserProfile(profileData)
+      
+      if (apiHelpers.isSuccessResponse(response)) {
+        const updatedProfile = apiHelpers.getResponseData(response)
+        profile.value = updatedProfile
+        user.value = updatedProfile
+        
+        return { success: true, profile: updatedProfile }
+      } else {
+        throw new Error(response.message || 'Không thể cập nhật profile')
+      }
+    } catch (err) {
+      error.value = apiHelpers.handleApiError(err)
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const uploadAvatar = async (file, onProgress) => {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await apiService.uploadAvatar(file, onProgress)
+      
+      if (apiHelpers.isSuccessResponse(response)) {
+        const data = apiHelpers.getResponseData(response)
+        
+        // Update profile with new avatar
+        if (profile.value) {
+          profile.value.avatar = data.avatar_url || data.url
+        }
+        
+        return { success: true, avatarUrl: data.avatar_url || data.url }
+      } else {
+        throw new Error(response.message || 'Không thể upload avatar')
+      }
+    } catch (err) {
+      error.value = apiHelpers.handleApiError(err)
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Legacy methods for backward compatibility
   const login = (userData) => {
     user.value = userData
+    profile.value = userData
   }
   
   const logout = () => {
     user.value = null
+    profile.value = null
+    walletBalance.value = 0
+    linkedBanks.value = []
+    customers.value = []
   }
   
   const updateWalletBalance = (amount) => {
@@ -109,7 +130,9 @@ export const useUserStore = defineStore('user', () => {
     })
   }
   
+  // Mock methods for admin functionality (to be replaced with admin APIs)
   const addCustomer = (customerData) => {
+    console.warn('addCustomer is deprecated - use admin APIs')
     const newCustomer = {
       id: customers.value.length + 1,
       ...customerData,
@@ -123,6 +146,7 @@ export const useUserStore = defineStore('user', () => {
   }
   
   const updateCustomerStatus = (customerId, status) => {
+    console.warn('updateCustomerStatus is deprecated - use admin APIs')
     const customer = customers.value.find(c => c.id === customerId)
     if (customer) {
       customer.status = status
@@ -132,9 +156,12 @@ export const useUserStore = defineStore('user', () => {
   return {
     // State
     user,
+    profile,
     walletBalance,
     linkedBanks,
     customers,
+    isLoading,
+    error,
     
     // Computed
     isLoggedIn,
@@ -144,6 +171,11 @@ export const useUserStore = defineStore('user', () => {
     blockedCustomers,
     
     // Actions
+    fetchUserProfile,
+    updateUserProfile,
+    uploadAvatar,
+    
+    // Legacy methods
     login,
     logout,
     updateWalletBalance,

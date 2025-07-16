@@ -1,0 +1,453 @@
+{
+  "info": {
+    "name": "Loan Management System API",
+    "description": "Complete API collection for the Loan Management System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Customer Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success) {",
+                  "        pm.collectionVariables.set('auth_token', response.data.token);",
+                  "        pm.collectionVariables.set('refresh_token', response.data.refreshToken);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"0987654321\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/customer/login",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "customer", "login"]
+            }
+          }
+        },
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success) {",
+                  "        pm.collectionVariables.set('auth_token', response.data.token);",
+                  "        pm.collectionVariables.set('refresh_token', response.data.refreshToken);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/admin/login",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "admin", "login"]
+            }
+          }
+        },
+        {
+          "name": "Customer Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success) {",
+                  "        pm.collectionVariables.set('auth_token', response.data.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nguyễn Văn A\",\n  \"phone\": \"0987654321\",\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\",\n  \"idCard\": \"123456789\",\n  \"address\": \"123 Đường ABC, Quận 1, TP.HCM\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"occupation\": \"Nhân viên văn phòng\",\n  \"monthlyIncome\": 15000000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/customer/register",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "customer", "register"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success) {",
+                  "        pm.collectionVariables.set('auth_token', response.data.token);",
+                  "        pm.collectionVariables.set('refresh_token', response.data.refreshToken);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('auth_token', '');",
+                  "pm.collectionVariables.set('refresh_token', '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/user/profile",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "user", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nguyễn Văn A Updated\",\n  \"email\": \"newemail@example.com\",\n  \"address\": \"456 Đường XYZ, Quận 2, TP.HCM\",\n  \"occupation\": \"Kỹ sư phần mềm\",\n  \"monthlyIncome\": 20000000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/user/profile",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "user", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\",\n  \"confirmPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/user/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "user", "change-password"]
+            }
+          }
+        },
+        {
+          "name": "Upload Avatar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/user/upload-avatar",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "user", "upload-avatar"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Loans",
+      "item": [
+        {
+          "name": "Get Loan Config",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/loans/config",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "loans", "config"]
+            }
+          }
+        },
+        {
+          "name": "Calculate Loan",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000000,\n  \"term\": 12\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/loans/calculate",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "loans", "calculate"]
+            }
+          }
+        },
+        {
+          "name": "Lookup Loan by Phone",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/loans/lookup/0987654321",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "loans", "lookup", "0987654321"]
+            }
+          }
+        },
+        {
+          "name": "Submit Loan Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000000,\n  \"term\": 12,\n  \"purpose\": \"Mua xe máy\",\n  \"emergencyContact\": {\n    \"name\": \"Nguyễn Thị B\",\n    \"phone\": \"0123456789\",\n    \"relationship\": \"spouse\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/loans/apply",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "loans", "apply"]
+            }
+          }
+        },
+        {
+          "name": "Get My Applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/loans/my-applications?status=active&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "loans", "my-applications"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Application Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/loans/applications/LOAN_001",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "loans", "applications", "LOAN_001"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

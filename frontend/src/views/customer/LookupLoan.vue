@@ -213,15 +213,12 @@ const handleLookup = async () => {
   hasSearched.value = true
   
   try {
-    const result = await loanStore.lookupLoanApplications({
-      phone: lookupForm.phone,
-      idCard: lookupForm.idCard
-    })
+    const result = await loanStore.lookupLoanByPhone(lookupForm.phone)
     
     if (result.success) {
-      loanApplications.value = result.applications
+      loanApplications.value = result.data?.applications || [result.data] || []
     } else {
-      error.value = result.error || 'Có lỗi xảy ra khi tra cứu'
+      error.value = result.error || 'Không tìm thấy thông tin khoản vay'
       loanApplications.value = []
     }
   } catch (err) {

@@ -1,0 +1,78 @@
+### Test API Endpoints
+
+### Health Check
+GET http://localhost:8000/api/health
+
+### Admin Login
+POST http://localhost:8000/api/v1/auth/admin/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Customer Register
+POST http://localhost:8000/api/v1/auth/customer/register
+Content-Type: application/json
+
+{
+  "name": "Nguyễn Văn A",
+  "phone": "0987654321",
+  "email": "user@example.com",
+  "password": "password123",
+  "confirmPassword": "password123",
+  "idCard": "123456789",
+  "address": "123 Đường ABC, Quận 1, TP.HCM",
+  "dateOfBirth": "1990-01-01",
+  "occupation": "Nhân viên văn phòng",
+  "monthlyIncome": 15000000
+}
+
+### Customer Login
+POST http://localhost:8000/api/v1/auth/customer/login
+Content-Type: application/json
+
+{
+  "phone": "0987654321",
+  "password": "password123"
+}
+
+### Get Loan Config
+GET http://localhost:8000/api/v1/loans/config
+
+### Calculate Loan
+POST http://localhost:8000/api/v1/loans/calculate
+Content-Type: application/json
+
+{
+  "amount": 50000000,
+  "term": 12
+}
+
+### Lookup Loan by Phone
+GET http://localhost:8000/api/v1/loans/lookup/0987654321
+
+### Get User Profile (requires token)
+GET http://localhost:8000/api/v1/user/profile
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Submit Loan Application (requires token)
+POST http://localhost:8000/api/v1/loans/apply
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "amount": 50000000,
+  "term": 12,
+  "purpose": "Mua xe máy",
+  "emergencyContact": {
+    "name": "Nguyễn Thị B",
+    "phone": "0123456789",
+    "relationship": "spouse"
+  }
+}
+
+### Get My Applications (requires token)
+GET http://localhost:8000/api/v1/loans/my-applications
+Authorization: Bearer YOUR_TOKEN_HERE

@@ -34,8 +34,8 @@
 </template>
 
 <script>
-import { ref } from 'vue'
-import apiService from '@/services/apiService.js'
+import { ref, computed } from 'vue'
+import { apiService, apiHelpers } from '@/services'
 
 export default {
   name: 'ApiUsageExample',

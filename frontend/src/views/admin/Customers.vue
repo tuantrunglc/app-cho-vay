@@ -387,8 +387,10 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { useAdminStore } from '@/stores/admin'
+import { apiHelpers } from '@/services'
 
 // Icons
 import MagnifyingGlassIcon from '@/components/icons/MagnifyingGlassIcon.vue'
@@ -403,6 +405,7 @@ import LockOpenIcon from '@/components/icons/LockOpenIcon.vue'
 import XMarkIcon from '@/components/icons/XMarkIcon.vue'
 
 const userStore = useUserStore()
+const adminStore = useAdminStore()
 
 // Reactive data
 const searchQuery = ref('')
@@ -419,12 +422,12 @@ const customerForm = reactive({
 })
 
 // Computed properties
-const totalCustomers = computed(() => userStore.customers.length)
-const activeCustomersCount = computed(() => userStore.activeCustomers.length)
-const blockedCustomersCount = computed(() => userStore.blockedCustomers.length)
+const totalCustomers = computed(() => adminStore.customers.length)
+const activeCustomersCount = computed(() => adminStore.activeCustomers.length)
+const blockedCustomersCount = computed(() => adminStore.blockedCustomers.length)
 
 const filteredCustomers = computed(() => {
-  let customers = userStore.customers
+  let customers = adminStore.customers
 
   // Status filter
   if (statusFilter.value) {
@@ -447,10 +450,7 @@ const filteredCustomers = computed(() => {
 
 // Methods
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount)
+  return apiHelpers.formatCurrency(amount)
 }
 
 const formatDate = (dateString) => {
@@ -471,29 +471,37 @@ const editCustomer = (customer) => {
   alert(`Chỉnh sửa thông tin khách hàng ${customer.name}`)
 }
 
-const toggleCustomerStatus = (customer) => {
+const toggleCustomerStatus = async (customer) => {
   const newStatus = customer.status === 'active' ? 'blocked' : 'active'
-  userStore.updateCustomerStatus(customer.id, newStatus)
+  const result = await adminStore.updateCustomerStatus(customer.id, newStatus)
   
-  const action = newStatus === 'blocked' ? 'khóa' : 'mở khóa'
-  alert(`Đã ${action} tài khoản khách hàng ${customer.name}`)
+  if (result.success) {
+    const action = newStatus === 'blocked' ? 'khóa' : 'mở khóa'
+    alert(`Đã ${action} tài khoản khách hàng ${customer.name}`)
+  } else {
+    alert(result.error || 'Có lỗi xảy ra khi cập nhật trạng thái khách hàng')
+  }
 }
 
 const addCustomer = () => {
-  userStore.addCustomer({
-    name: customerForm.name,
-    phone: customerForm.phone,
-    email: customerForm.email,
-    idCard: customerForm.idCard,
-    address: customerForm.address
-  })
-
+  // This would use adminService.createCustomer in real implementation
+  console.warn('Add customer functionality needs to be implemented with admin API')
+  
   // Reset form
   Object.keys(customerForm).forEach(key => {
     customerForm[key] = ''
   })
 
   showAddCustomer.value = false
-  alert('Đã thêm khách hàng mới thành công!')
+  alert('Chức năng thêm khách hàng sẽ được triển khai với API admin')
 }
+
+const refreshData = async () => {
+  await adminStore.fetchCustomers()
+}
+
+// Initialize data
+onMounted(() => {
+  refreshData()
+})
 </script>

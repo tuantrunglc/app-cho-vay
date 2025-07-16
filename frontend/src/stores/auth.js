@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { apiService, apiHelpers } from '@/services'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -17,69 +18,66 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     
     try {
-      // Mock login - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await apiService.login(credentials)
       
-      // Handle admin login with username
-      if (credentials.username && credentials.username === 'admin' && credentials.password === 'admin123') {
-        user.value = {
-          id: 1,
-          username: 'admin',
-          name: 'Administrator',
-          email: 'admin@company.com',
-          role: 'admin'
-        }
-        token.value = 'mock-admin-token'
-      }
-      // Handle customer login with phone
-      else if (credentials.phone === '0987654321' && credentials.password === 'customer123') {
-        user.value = {
-          id: 2,
-          name: 'Nguyễn Văn A',
-          phone: '0987654321',
-          role: 'customer'
-        }
-        token.value = 'mock-customer-token'
-      }
-      // Handle admin login with phone (backward compatibility)
-      else if (credentials.phone === '0123456789' && credentials.password === 'admin123') {
-        user.value = {
-          id: 1,
-          name: 'Admin',
-          phone: '0123456789',
-          role: 'admin'
-        }
-        token.value = 'mock-admin-token'
+      if (apiHelpers.isSuccessResponse(response)) {
+        const data = apiHelpers.getResponseData(response)
+        user.value = data.user
+        token.value = data.token
+        
+        return { success: true, user: data.user }
       } else {
-        throw new Error('Thông tin đăng nhập không đúng')
+        throw new Error(response.message || 'Đăng nhập thất bại')
       }
-      
-      localStorage.setItem('token', token.value)
-      localStorage.setItem('user', JSON.stringify(user.value))
-      
-      return { success: true }
     } catch (error) {
-      return { success: false, error: error.message }
+      const errorMessage = apiHelpers.handleApiError(error)
+      return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
     }
   }
 
-  const logout = () => {
-    user.value = null
-    token.value = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+  const logout = async () => {
+    try {
+      await apiService.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      // Always clear local state regardless of API call result
+      user.value = null
+      token.value = null
+    }
   }
 
-  const checkAuth = () => {
-    const savedToken = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
-    
-    if (savedToken && savedUser) {
-      token.value = savedToken
-      user.value = JSON.parse(savedUser)
-      return true
+  const checkAuth = async () => {
+    // Check if user is authenticated using helper
+    if (apiHelpers.isAuthenticated()) {
+      const savedToken = apiHelpers.getToken()
+      const savedUser = apiHelpers.getCurrentUser()
+      
+      if (savedToken && savedUser) {
+        token.value = savedToken
+        user.value = savedUser
+        
+        // Optionally verify token with server
+        try {
+          const response = await apiService.getCurrentUser()
+          if (apiHelpers.isSuccessResponse(response)) {
+            const userData = apiHelpers.getResponseData(response)
+            user.value = userData
+            localStorage.setItem('user', JSON.stringify(userData))
+          }
+        } catch (error) {
+          console.error('Token verification failed:', error)
+          // Token might be invalid, clear auth state
+          user.value = null
+          token.value = null
+          apiHelpers.clearAuthData()
+          return false
+        }
+        
+        return true
+      }
     }
     
     return false
@@ -89,25 +87,20 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     
     try {
-      // Mock registration - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await apiService.register(userData)
       
-      // Create new customer user
-      user.value = {
-        id: Date.now(),
-        name: userData.name,
-        phone: userData.phone,
-        role: 'customer'
+      if (apiHelpers.isSuccessResponse(response)) {
+        const data = apiHelpers.getResponseData(response)
+        user.value = data.user
+        token.value = data.token
+        
+        return { success: true, user: data.user, message: data.message }
+      } else {
+        throw new Error(response.message || 'Đăng ký thất bại')
       }
-      
-      token.value = `mock-token-${Date.now()}`
-      
-      localStorage.setItem('token', token.value)
-      localStorage.setItem('user', JSON.stringify(user.value))
-      
-      return { success: true }
     } catch (error) {
-      return { success: false, error: error.message }
+      const errorMessage = apiHelpers.handleApiError(error)
+      return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
     }
@@ -117,15 +110,20 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     
     try {
-      // Mock profile update - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500))
+      const response = await apiService.updateUserProfile(profileData)
       
-      user.value = { ...user.value, ...profileData }
-      localStorage.setItem('user', JSON.stringify(user.value))
-      
-      return { success: true }
+      if (apiHelpers.isSuccessResponse(response)) {
+        const updatedUser = apiHelpers.getResponseData(response)
+        user.value = updatedUser
+        localStorage.setItem('user', JSON.stringify(updatedUser))
+        
+        return { success: true, user: updatedUser }
+      } else {
+        throw new Error(response.message || 'Cập nhật thông tin thất bại')
+      }
     } catch (error) {
-      return { success: false, error: error.message }
+      const errorMessage = apiHelpers.handleApiError(error)
+      return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
     }
@@ -135,17 +133,16 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     
     try {
-      // Mock password change - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500))
+      const response = await apiService.changePassword(passwordData)
       
-      // Validate current password
-      if (passwordData.currentPassword !== 'current123') {
-        throw new Error('Mật khẩu hiện tại không đúng')
+      if (apiHelpers.isSuccessResponse(response)) {
+        return { success: true, message: response.message || 'Đổi mật khẩu thành công' }
+      } else {
+        throw new Error(response.message || 'Đổi mật khẩu thất bại')
       }
-      
-      return { success: true }
     } catch (error) {
-      return { success: false, error: error.message }
+      const errorMessage = apiHelpers.handleApiError(error)
+      return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
     }

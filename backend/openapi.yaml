@@ -1,0 +1,1000 @@
+openapi: 3.0.3
+info:
+  title: Loan Management System API
+  description: API documentation for the Loan Management System
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8000/api
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+  /v1/auth/customer/login:
+    post:
+      tags:
+        - Authentication
+      summary: Customer login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone
+                - password
+              properties:
+                phone:
+                  type: string
+                  pattern: '^(0[3|5|7|8|9])+([0-9]{8})$'
+                  example: "0987654321"
+                password:
+                  type: string
+                  minLength: 6
+                  example: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/admin/login:
+    post:
+      tags:
+        - Authentication
+      summary: Admin login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "admin"
+                password:
+                  type: string
+                  example: "admin123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/customer/register:
+    post:
+      tags:
+        - Authentication
+      summary: Customer registration
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerRegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /v1/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user info
+      responses:
+        '200':
+          description: User info retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+
+  /v1/user/profile:
+    get:
+      tags:
+        - User Management
+      summary: Get user profile
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserProfile'
+    put:
+      tags:
+        - User Management
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserProfile'
+                      message:
+                        type: string
+                        example: "Cập nhật thông tin thành công"
+
+  /v1/user/change-password:
+    post:
+      tags:
+        - User Management
+      summary: Change user password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+                - confirmPassword
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 6
+                confirmPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Đổi mật khẩu thành công"
+
+  /v1/user/upload-avatar:
+    post:
+      tags:
+        - User Management
+      summary: Upload user avatar
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Avatar uploaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          avatarUrl:
+                            type: string
+                            example: "https://example.com/avatar.jpg"
+                      message:
+                        type: string
+                        example: "Cập nhật ảnh đại diện thành công"
+
+  /v1/loans/config:
+    get:
+      tags:
+        - Loans
+      summary: Get loan configuration
+      security: []
+      responses:
+        '200':
+          description: Loan configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoanConfig'
+
+  /v1/loans/calculate:
+    post:
+      tags:
+        - Loans
+      summary: Calculate loan details
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - term
+              properties:
+                amount:
+                  type: number
+                  minimum: 1000000
+                  maximum: 500000000
+                  example: 50000000
+                term:
+                  type: integer
+                  example: 12
+      responses:
+        '200':
+          description: Loan calculation successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoanCalculation'
+
+  /v1/loans/lookup/{phone}:
+    get:
+      tags:
+        - Loans
+      summary: Lookup loan by phone number
+      security: []
+      parameters:
+        - name: phone
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^(0[3|5|7|8|9])+([0-9]{8})$'
+          example: "0987654321"
+      responses:
+        '200':
+          description: Loan lookup successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoanLookup'
+        '404':
+          description: No loan found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/loans/apply:
+    post:
+      tags:
+        - Loans
+      summary: Submit loan application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanApplicationRequest'
+      responses:
+        '201':
+          description: Loan application submitted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoanApplication'
+                      message:
+                        type: string
+                        example: "Đơn vay đã được gửi thành công"
+
+  /v1/loans/my-applications:
+    get:
+      tags:
+        - Loans
+      summary: Get user's loan applications
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected, active, completed]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Applications retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          applications:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/LoanApplication'
+                          pagination:
+                            $ref: '#/components/schemas/Pagination'
+
+  /v1/loans/applications/{id}:
+    get:
+      tags:
+        - Loans
+      summary: Get loan application details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Application details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoanApplicationDetail'
+        '404':
+          description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    BaseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        meta:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            version:
+              type: string
+              example: "1.0.0"
+
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            message:
+              type: string
+
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+            code:
+              type: string
+
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [customer, admin]
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        verification_status:
+          type: string
+          enum: [pending, verified, rejected]
+        credit_score:
+          type: integer
+          nullable: true
+        avatar_url:
+          type: string
+          nullable: true
+
+    UserProfile:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            id_card:
+              type: string
+            address:
+              type: string
+            date_of_birth:
+              type: string
+              format: date
+            occupation:
+              type: string
+            monthly_income:
+              type: string
+            wallet_balance:
+              type: number
+            current_debt:
+              type: number
+            total_loans:
+              type: integer
+
+    AuthResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+                token:
+                  type: string
+                refreshToken:
+                  type: string
+                expiresIn:
+                  type: integer
+
+    RegisterResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+                token:
+                  type: string
+                message:
+                  type: string
+
+    RefreshResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                token:
+                  type: string
+                refreshToken:
+                  type: string
+                expiresIn:
+                  type: integer
+
+    CustomerRegisterRequest:
+      type: object
+      required:
+        - name
+        - phone
+        - password
+        - confirmPassword
+        - idCard
+        - address
+        - dateOfBirth
+        - occupation
+        - monthlyIncome
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          pattern: '^[\p{L}\s]+$'
+          example: "Nguyễn Văn A"
+        phone:
+          type: string
+          pattern: '^(0[3|5|7|8|9])+([0-9]{8})$'
+          example: "0987654321"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "user@example.com"
+        password:
+          type: string
+          minLength: 6
+          maxLength: 255
+          example: "password123"
+        confirmPassword:
+          type: string
+          example: "password123"
+        idCard:
+          type: string
+          pattern: '^[0-9]{9,12}$'
+          example: "123456789"
+        address:
+          type: string
+          minLength: 10
+          maxLength: 500
+          example: "123 Đường ABC, Quận 1, TP.HCM"
+        dateOfBirth:
+          type: string
+          format: date
+          example: "1990-01-01"
+        occupation:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Nhân viên văn phòng"
+        monthlyIncome:
+          type: number
+          minimum: 1000000
+          maximum: 1000000000
+          example: 15000000
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          nullable: true
+        address:
+          type: string
+          minLength: 10
+          maxLength: 500
+        occupation:
+          type: string
+          minLength: 2
+          maxLength: 100
+        monthlyIncome:
+          type: number
+          minimum: 1000000
+          maximum: 1000000000
+
+    LoanConfig:
+      type: object
+      properties:
+        min_amount:
+          type: number
+          example: 1000000
+        max_amount:
+          type: number
+          example: 500000000
+        min_term:
+          type: integer
+          example: 1
+        max_term:
+          type: integer
+          example: 60
+        interest_rate:
+          type: number
+          example: 1.5
+        processing_fee:
+          type: number
+          example: 2.0
+        late_fee:
+          type: number
+          example: 5.0
+        available_terms:
+          type: array
+          items:
+            type: integer
+          example: [1, 3, 6, 12, 18, 24, 36, 48, 60]
+        loan_purposes:
+          type: array
+          items:
+            type: string
+          example: ["Tiêu dùng cá nhân", "Mua xe máy", "Mua ô tô"]
+
+    LoanCalculation:
+      type: object
+      properties:
+        loan_amount:
+          type: number
+        term_months:
+          type: integer
+        interest_rate:
+          type: number
+        monthly_payment:
+          type: number
+        total_payment:
+          type: number
+        total_interest:
+          type: number
+        processing_fee:
+          type: number
+        payment_schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentScheduleItem'
+
+    PaymentScheduleItem:
+      type: object
+      properties:
+        month:
+          type: integer
+        payment_date:
+          type: string
+          format: date
+        principal:
+          type: number
+        interest:
+          type: number
+        total_payment:
+          type: number
+        remaining_balance:
+          type: number
+
+    LoanLookup:
+      type: object
+      properties:
+        customer_name:
+          type: string
+        phone:
+          type: string
+        active_loans:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActiveLoan'
+        loan_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoanHistory'
+
+    ActiveLoan:
+      type: object
+      properties:
+        loan_id:
+          type: string
+        amount:
+          type: number
+        remaining_amount:
+          type: number
+        status:
+          type: string
+        next_payment_date:
+          type: string
+          format: date
+        next_payment_amount:
+          type: number
+
+    LoanHistory:
+      type: object
+      properties:
+        loan_id:
+          type: string
+        amount:
+          type: number
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    LoanApplicationRequest:
+      type: object
+      required:
+        - amount
+        - term
+        - purpose
+        - emergencyContact
+      properties:
+        amount:
+          type: number
+          minimum: 1000000
+          maximum: 500000000
+        term:
+          type: integer
+        purpose:
+          type: string
+        emergencyContact:
+          $ref: '#/components/schemas/EmergencyContact'
+
+    EmergencyContact:
+      type: object
+      required:
+        - name
+        - phone
+        - relationship
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+          pattern: '^(0[3|5|7|8|9])+([0-9]{8})$'
+        relationship:
+          type: string
+          enum: [spouse, parent, sibling, friend, other]
+
+    LoanApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+        loan_id:
+          type: string
+        amount:
+          type: number
+        term:
+          type: integer
+        purpose:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected, active, completed]
+        monthly_payment:
+          type: number
+        total_payment:
+          type: number
+        remaining_amount:
+          type: number
+          nullable: true
+        next_payment_date:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        emergency_contact:
+          $ref: '#/components/schemas/EmergencyContact'
+
+    LoanApplicationDetail:
+      allOf:
+        - $ref: '#/components/schemas/LoanApplication'
+        - type: object
+          properties:
+            documents:
+              type: array
+              items:
+                $ref: '#/components/schemas/Document'
+            payment_history:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaymentHistory'
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+
+    PaymentHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+        payment_date:
+          type: string
+          format: date
+        amount:
+          type: number
+        principal:
+          type: number
+        interest:
+          type: number
+        status:
+          type: string
+          enum: [pending, completed, failed]
+
+    Pagination:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+        totalPages:
+          type: integer
+        totalItems:
+          type: integer
+        itemsPerPage:
+          type: integer

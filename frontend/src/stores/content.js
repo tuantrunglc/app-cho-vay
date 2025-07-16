@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { apiService, apiHelpers } from '@/services'
 
 export const useContentStore = defineStore('content', () => {
   // State
@@ -30,30 +31,11 @@ export const useContentStore = defineStore('content', () => {
     }
   ])
 
-  const interestRates = ref({
-    baseRate: 2.0,
-    promotionalRate: 1.5,
-    penaltyRate: 3.0,
-    lastUpdated: '2024-01-15T10:00:00Z',
-    updatedBy: 'Admin'
-  })
-
-  const loanLimits = ref({
-    minAmount: 10000000,    // 10 triệu
-    maxAmount: 500000000,   // 500 triệu
-    stepAmount: 1000000,    // 1 triệu
-    defaultAmount: 50000000, // 50 triệu
-    lastUpdated: '2024-01-01T00:00:00Z'
-  })
-
-  const loanTerms = ref([
-    { id: 1, months: 6, active: true },
-    { id: 2, months: 12, active: true },
-    { id: 3, months: 18, active: true },
-    { id: 4, months: 24, active: true },
-    { id: 5, months: 36, active: true },
-    { id: 6, months: 48, active: true }
-  ])
+  const interestRates = ref(null)
+  const loanLimits = ref(null)
+  const loanTerms = ref([])
+  const isLoading = ref(false)
+  const error = ref(null)
 
   const notifications = ref([
     {
@@ -90,6 +72,45 @@ export const useContentStore = defineStore('content', () => {
   )
 
   // Actions
+  const fetchLoanConfig = async () => {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await apiService.getLoanConfig()
+      
+      if (apiHelpers.isSuccessResponse(response)) {
+        const config = apiHelpers.getResponseData(response)
+        
+        // Update state with config from API
+        if (config.interest_rates) {
+          interestRates.value = config.interest_rates
+        }
+        
+        if (config.loan_limits) {
+          loanLimits.value = config.loan_limits
+        }
+        
+        if (config.available_terms) {
+          loanTerms.value = config.available_terms.map((term, index) => ({
+            id: index + 1,
+            months: term,
+            active: true
+          }))
+        }
+        
+        return { success: true, config }
+      } else {
+        throw new Error(response.message || 'Không thể lấy cấu hình khoản vay')
+      }
+    } catch (err) {
+      error.value = apiHelpers.handleApiError(err)
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const addBanner = (bannerData) => {
     const newBanner = {
       id: Date.now(),
@@ -207,14 +228,19 @@ export const useContentStore = defineStore('content', () => {
   }
 
   const getQuickAmounts = () => {
-    const { minAmount, maxAmount } = loanLimits.value
-    const step = (maxAmount - minAmount) / 4
+    if (!loanLimits.value) return []
+    
+    const { min_amount, max_amount } = loanLimits.value
+    const step = (max_amount - min_amount) / 4
     return [
-      minAmount + step,
-      minAmount + step * 2,
-      minAmount + step * 3
+      min_amount + step,
+      min_amount + step * 2,
+      min_amount + step * 3
     ]
   }
+
+  // Initialize config on store creation
+  fetchLoanConfig()
 
   return {
     // State
@@ -223,6 +249,8 @@ export const useContentStore = defineStore('content', () => {
     loanLimits,
     loanTerms,
     notifications,
+    isLoading,
+    error,
     
     // Getters
     activeBanners,
@@ -230,6 +258,7 @@ export const useContentStore = defineStore('content', () => {
     activeNotifications,
     
     // Actions
+    fetchLoanConfig,
     addBanner,
     updateBanner,
     deleteBanner,

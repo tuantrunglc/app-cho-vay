@@ -281,14 +281,15 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
+import { apiHelpers } from '@/services'
 import UserIcon from '@/components/icons/UserIcon.vue'
 import EyeIcon from '@/components/icons/EyeIcon.vue'
 import EyeSlashIcon from '@/components/icons/EyeSlashIcon.vue'
 import ShieldCheckIcon from '@/components/icons/ShieldCheckIcon.vue'
 
 const router = useRouter()
-const userStore = useUserStore()
+const authStore = useAuthStore()
 
 const isLoading = ref(false)
 const showPassword = ref(false)
@@ -319,23 +320,41 @@ const registerForm = reactive({
 
 // Methods
 const handleLogin = async () => {
+  // Validate form
+  if (!apiHelpers.validatePhoneNumber(loginForm.phone)) {
+    alert('Số điện thoại không hợp lệ!')
+    return
+  }
+  
+  if (!loginForm.password) {
+    alert('Vui lòng nhập mật khẩu!')
+    return
+  }
+  
   isLoading.value = true
   
-  // Mock login API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  // Mock successful login
-  userStore.login({
-    id: 1,
-    name: 'Nguyễn Văn A',
-    phone: loginForm.phone,
-    email: 'user@example.com'
-  })
-  
-  isLoading.value = false
-  
-  // Redirect to home
-  router.push('/')
+  try {
+    const result = await authStore.login({
+      phone: loginForm.phone,
+      password: loginForm.password
+    })
+    
+    if (result.success) {
+      // Redirect based on user role
+      if (result.user?.role === 'admin') {
+        router.push('/admin/dashboard')
+      } else {
+        router.push('/')
+      }
+    } else {
+      alert(result.error || 'Đăng nhập thất bại!')
+    }
+  } catch (error) {
+    alert('Có lỗi xảy ra, vui lòng thử lại!')
+    console.error('Login error:', error)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const handleForgotPassword = async () => {
@@ -350,25 +369,67 @@ const handleForgotPassword = async () => {
 }
 
 const handleRegister = async () => {
+  // Validate form
+  if (!apiHelpers.validatePhoneNumber(registerForm.phone)) {
+    alert('Số điện thoại không hợp lệ!')
+    return
+  }
+  
+  if (!apiHelpers.validateEmail(registerForm.email)) {
+    alert('Email không hợp lệ!')
+    return
+  }
+  
   if (registerForm.password !== registerForm.confirmPassword) {
     alert('Mật khẩu xác nhận không khớp!')
     return
   }
   
-  // Mock register API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  if (registerForm.password.length < 6) {
+    alert('Mật khẩu phải có ít nhất 6 ký tự!')
+    return
+  }
   
-  alert('Đăng ký thành công! Vui lòng đăng nhập.')
-  showRegister.value = false
+  if (!registerForm.agreeTerms) {
+    alert('Vui lòng đồng ý với điều khoản sử dụng!')
+    return
+  }
   
-  // Reset form
-  Object.keys(registerForm).forEach(key => {
-    if (typeof registerForm[key] === 'boolean') {
-      registerForm[key] = false
+  isLoading.value = true
+  
+  try {
+    const result = await authStore.register({
+      name: registerForm.fullName,
+      phone: registerForm.phone,
+      email: registerForm.email,
+      password: registerForm.password,
+      confirmPassword: registerForm.confirmPassword
+    })
+    
+    if (result.success) {
+      alert('Đăng ký thành công!')
+      showRegister.value = false
+      
+      // Reset form
+      Object.keys(registerForm).forEach(key => {
+        if (typeof registerForm[key] === 'boolean') {
+          registerForm[key] = false
+        } else {
+          registerForm[key] = ''
+        }
+      })
+      
+      // Redirect to home
+      router.push('/')
     } else {
-      registerForm[key] = ''
+      alert(result.error || 'Đăng ký thất bại!')
     }
-  })
+  } catch (error) {
+    alert('Có lỗi xảy ra, vui lòng thử lại!')
+    console.error('Register error:', error)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const goToAdminLogin = () => {

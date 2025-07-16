@@ -197,9 +197,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useLoanStore } from '@/stores/loan'
 import { useUserStore } from '@/stores/user'
+import { useAdminStore } from '@/stores/admin'
+import { apiHelpers } from '@/services'
 
 // Icons
 import DocumentCheckIcon from '@/components/icons/DocumentCheckIcon.vue'
@@ -211,6 +213,7 @@ import DocumentArrowDownIcon from '@/components/icons/DocumentArrowDownIcon.vue'
 
 const loanStore = useLoanStore()
 const userStore = useUserStore()
+const adminStore = useAdminStore()
 
 // Computed properties
 const pendingLoans = computed(() => loanStore.pendingApplications.length)
@@ -230,10 +233,7 @@ const recentApplications = computed(() => {
 
 // Methods
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount)
+  return apiHelpers.formatCurrency(amount)
 }
 
 const getStatusClass = (status) => {
@@ -260,4 +260,13 @@ const exportReport = () => {
   // Mock export functionality
   alert('Tính năng xuất báo cáo sẽ được triển khai sớm!')
 }
+
+// Initialize data
+onMounted(async () => {
+  await Promise.all([
+    adminStore.fetchDashboardStats(),
+    adminStore.fetchLoanApplications(),
+    adminStore.fetchCustomers()
+  ])
+})
 </script>

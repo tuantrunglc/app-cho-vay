@@ -287,6 +287,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useLoanStore } from '@/stores/loan'
+import { apiHelpers } from '@/services'
 
 // Icons
 import ArrowPathIcon from '@/components/icons/ArrowPathIcon.vue'
@@ -310,50 +311,8 @@ const filterTabs = [
   { key: 'overdue', label: 'Quá hạn' }
 ]
 
-// Mock data
-const loans = ref([
-  {
-    id: 'LN001',
-    amount: 50000000,
-    term: 12,
-    interestRate: 2.0,
-    monthlyPayment: 4583333,
-    status: 'active',
-    paidMonths: 3,
-    remainingAmount: 41250000,
-    nextPaymentDate: new Date('2024-02-15'),
-    createdAt: new Date('2023-11-15'),
-    paymentHistory: [
-      { id: 1, amount: 4583333, date: new Date('2023-12-15') },
-      { id: 2, amount: 4583333, date: new Date('2024-01-15') }
-    ]
-  },
-  {
-    id: 'LN002',
-    amount: 30000000,
-    term: 6,
-    interestRate: 2.5,
-    monthlyPayment: 5750000,
-    status: 'completed',
-    paidMonths: 6,
-    remainingAmount: 0,
-    createdAt: new Date('2023-06-01'),
-    paymentHistory: []
-  },
-  {
-    id: 'LN003',
-    amount: 100000000,
-    term: 24,
-    interestRate: 1.8,
-    monthlyPayment: 5966667,
-    status: 'overdue',
-    paidMonths: 8,
-    remainingAmount: 95333333,
-    nextPaymentDate: new Date('2024-01-15'),
-    createdAt: new Date('2023-05-01'),
-    paymentHistory: []
-  }
-])
+// Use loan store data
+const loans = computed(() => loanStore.loanApplications)
 
 // Computed properties
 const filteredLoans = computed(() => {
@@ -366,15 +325,12 @@ const activeLoans = computed(() => {
 })
 
 const totalDebt = computed(() => {
-  return activeLoans.value.reduce((total, loan) => total + loan.remainingAmount, 0)
+  return activeLoans.value.reduce((total, loan) => total + (loan.remaining_amount || loan.amount || 0), 0)
 })
 
 // Methods
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount)
+  return apiHelpers.formatCurrency(amount)
 }
 
 const formatDate = (date) => {
@@ -416,9 +372,7 @@ const getEmptyStateMessage = () => {
 }
 
 const refreshLoans = async () => {
-  // Mock refresh
-  await new Promise(resolve => setTimeout(resolve, 500))
-  // In real app, would fetch from API
+  await loanStore.fetchMyLoanApplications()
 }
 
 const makePayment = (loan) => {

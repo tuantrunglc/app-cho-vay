@@ -269,8 +269,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useLoanStore } from '@/stores/loan'
+import { useAdminStore } from '@/stores/admin'
+import { apiHelpers } from '@/services'
 
 // Icons
 import MagnifyingGlassIcon from '@/components/icons/MagnifyingGlassIcon.vue'
@@ -281,6 +283,7 @@ import XMarkIcon from '@/components/icons/XMarkIcon.vue'
 import DocumentIcon from '@/components/icons/DocumentIcon.vue'
 
 const loanStore = useLoanStore()
+const adminStore = useAdminStore()
 
 // Reactive data
 const activeTab = ref('pending')
@@ -293,20 +296,20 @@ const tabs = computed(() => [
   {
     key: 'pending',
     label: 'Chờ duyệt',
-    count: loanStore.pendingApplications.length
+    count: adminStore.pendingLoans.length
   },
   {
-    key: 'cancelled',
-    label: 'Đã hủy',
-    count: loanStore.cancelledApplications.length
+    key: 'rejected',
+    label: 'Đã từ chối',
+    count: adminStore.rejectedLoans.length
   }
 ])
 
 const currentApplications = computed(() => {
   if (activeTab.value === 'pending') {
-    return loanStore.pendingApplications
+    return adminStore.pendingLoans
   } else {
-    return loanStore.cancelledApplications
+    return adminStore.rejectedLoans
   }
 })
 
@@ -317,9 +320,10 @@ const filteredApplications = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     applications = applications.filter(app => 
-      app.phone.includes(query) || 
-      app.idCard.includes(query) ||
-      app.customerName.toLowerCase().includes(query)
+      app.phone?.includes(query) || 
+      app.id_card?.includes(query) ||
+      app.customer_name?.toLowerCase().includes(query) ||
+      app.name?.toLowerCase().includes(query)
     )
   }
 
@@ -328,10 +332,7 @@ const filteredApplications = computed(() => {
 
 // Methods
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount)
+  return apiHelpers.formatCurrency(amount)
 }
 
 const formatDate = (dateString) => {
@@ -374,18 +375,36 @@ const viewApplication = (application) => {
   selectedApplication.value = application
 }
 
-const approveApplication = (id) => {
-  loanStore.approveLoanApplication(id)
-  selectedApplication.value = null
+const approveApplication = async (id) => {
+  const result = await adminStore.approveLoanApplication(id)
+  
+  if (result.success) {
+    alert('Đơn vay đã được duyệt thành công!')
+    selectedApplication.value = null
+    refreshData()
+  } else {
+    alert(result.error || 'Có lỗi xảy ra khi duyệt đơn vay')
+  }
 }
 
-const rejectApplication = (id) => {
-  loanStore.rejectLoanApplication(id)
-  selectedApplication.value = null
+const rejectApplication = async (id, reason = '') => {
+  const result = await adminStore.rejectLoanApplication(id, { reason })
+  
+  if (result.success) {
+    alert('Đơn vay đã bị từ chối!')
+    selectedApplication.value = null
+    refreshData()
+  } else {
+    alert(result.error || 'Có lỗi xảy ra khi từ chối đơn vay')
+  }
 }
 
-const refreshData = () => {
-  // Mock refresh functionality
-  console.log('Refreshing data...')
+const refreshData = async () => {
+  await adminStore.fetchLoanApplications()
 }
+
+// Initialize data
+onMounted(() => {
+  refreshData()
+})
 </script>

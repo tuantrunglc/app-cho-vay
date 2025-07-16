@@ -8,10 +8,12 @@ Service này được xây dựng để thực hiện các API calls sử dụng
 
 ```
 src/services/
-├── api.js          # Axios client configuration
-├── apiService.js   # Main API service class
-├── index.js        # Export file
-└── README.md       # Documentation
+├── api.js            # Axios client configuration
+├── apiService.js     # Main API service class
+├── apiConstants.js   # API endpoints, error codes, constants
+├── apiHelpers.js     # Utility functions
+├── index.js          # Export file
+└── README.md         # Documentation
 ```
 
 ## Cấu hình
@@ -20,7 +22,7 @@ src/services/
 
 Trong file `.env`:
 ```
-VITE_API_URL=http://localhost:8080/api
+VITE_API_URL=http://localhost:8000/api
 ```
 
 ### Features
@@ -28,9 +30,12 @@ VITE_API_URL=http://localhost:8080/api
 - ✅ Tự động thêm base URL từ environment variable
 - ✅ Request/Response interceptors
 - ✅ Tự động thêm Authorization header
-- ✅ Error handling
+- ✅ Automatic token refresh khi hết hạn
+- ✅ Error handling với error codes
 - ✅ Timeout configuration
 - ✅ File upload support
+- ✅ API constants và helper functions
+- ✅ Validation utilities
 
 ## Cách sử dụng
 
@@ -108,20 +113,28 @@ export const useDataStore = defineStore('data', {
 ## API Methods
 
 ### Authentication
-- `login(credentials)` - Đăng nhập
-- `register(userData)` - Đăng ký
+- `login(credentials)` - Đăng nhập (customer/admin)
+- `register(userData)` - Đăng ký customer
 - `logout()` - Đăng xuất
+- `refreshToken()` - Làm mới token
+- `getCurrentUser()` - Lấy thông tin user hiện tại
 
 ### User Management
-- `getUserProfile()` - Lấy thông tin user
-- `updateUserProfile(userData)` - Cập nhật thông tin user
+- `getUserProfile()` - Lấy thông tin profile
+- `updateUserProfile(userData)` - Cập nhật profile
+- `changePassword(passwordData)` - Đổi mật khẩu
+- `uploadAvatar(file, onProgress)` - Upload avatar
 
 ### Loan Management
-- `getLoans(params)` - Lấy danh sách loans
-- `getLoanById(id)` - Lấy loan theo ID
-- `createLoan(loanData)` - Tạo loan mới
-- `updateLoan(id, loanData)` - Cập nhật loan
-- `deleteLoan(id)` - Xóa loan
+- `getLoanConfig()` - Lấy cấu hình khoản vay
+- `calculateLoan(loanData)` - Tính toán khoản vay
+- `lookupLoanByPhone(phone)` - Tra cứu khoản vay
+- `applyLoan(loanData)` - Nộp đơn vay
+- `getMyLoanApplications(params)` - Lấy danh sách đơn vay
+- `getLoanApplicationById(id)` - Lấy chi tiết đơn vay
+- `getLoans(params)` - Alias cho getMyLoanApplications
+- `getLoanById(id)` - Alias cho getLoanApplicationById
+- `createLoan(loanData)` - Alias cho applyLoan
 
 ### Generic Methods
 - `get(endpoint, params)` - GET request
@@ -129,7 +142,9 @@ export const useDataStore = defineStore('data', {
 - `put(endpoint, data)` - PUT request
 - `patch(endpoint, data)` - PATCH request
 - `delete(endpoint)` - DELETE request
-- `uploadFile(endpoint, file, onUploadProgress)` - Upload file
+- `uploadFile(endpoint, file, onProgress)` - Upload single file
+- `uploadMultipleFiles(endpoint, files, onProgress)` - Upload multiple files
+- `healthCheck()` - Kiểm tra trạng thái hệ thống
 
 ## Error Handling
 
